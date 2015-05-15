@@ -10,7 +10,7 @@ namespace BoogieDownGames {
 		private List<AudioClip> m_soundClips;
 		
 		[SerializeField]
-		private int m_initialSound; //Index of the initial sound
+		private int m_initialSound; // Index of the initial sound
 		
 		[SerializeField]
 		private int m_currentIndex;
@@ -35,23 +35,28 @@ namespace BoogieDownGames {
 
 		void Awake()
 		{
-			//We going to make sure that the list has something in it first
-			if( m_soundClips.Count > 0 ) {
-				GetComponent<AudioSource>().clip = m_soundClips[m_initialSound];
+			// Make sure we are properly initialized and the list has something in it before we start
+			if (m_soundClips.Count > 0) {
+				if (m_initialSound < 0) {
+					m_initialSound = 0;
+				} else if (m_initialSound > m_soundClips.Count - 1) {
+					m_initialSound = m_soundClips.Count;
+				}
 				m_currentIndex = m_initialSound;
+				GetComponent<AudioSource>().clip = m_soundClips[m_currentIndex];
 			}
+		}
+
+		void Start()
+		{
+			NotificationCenter.DefaultCenter.AddObserver(this, "PlayCurrentSong");
+			NotificationCenter.DefaultCenter.AddObserver(this, "PauseSong");
+			PostSongChange(m_soundClips[m_currentIndex].name, m_soundClips[m_currentIndex].length);
 		}
 		
 		public bool DetectEndOfSong()
 		{
 			return ! GetComponent<AudioSource> ().isPlaying;
-		}
-		
-		void Start()
-		{
-			NotificationCenter.DefaultCenter.AddObserver(this, "PlayCurrentSong");
-			NotificationCenter.DefaultCenter.AddObserver(this, "PauseSong");
-			//playAtIndex(m_initialSound);
 		}
 		
 		public void SetVolume(float p_vol)
@@ -71,7 +76,7 @@ namespace BoogieDownGames {
 				m_currentIndex = p_index;
 				GetComponent<AudioSource> ().clip = m_soundClips [p_index];
 				GetComponent<AudioSource> ().Play ();
-				PostMessage ("SetText", m_soundClips [p_index].name);
+				PostSongChange(m_soundClips[p_index].name, m_soundClips[p_index].length);
 				GameMaster.Instance.CurrentSong = m_currentIndex;
 			}
 		}
@@ -84,42 +89,41 @@ namespace BoogieDownGames {
 		
 		public AudioClip GetClipAtIndex(int p_index)
 		{
-			if(p_index > m_soundClips.Count - 1) {
-				p_index = m_soundClips.Count -1;
+			if (p_index > m_soundClips.Count - 1) {
+				p_index = m_soundClips.Count - 1;
 			}
 			m_currentIndex = p_index;
-			PostMessage("SetText",m_soundClips[m_currentIndex].name);
+			PostSongChange(m_soundClips[m_currentIndex].name, m_soundClips[m_currentIndex].length);
 			return m_soundClips[p_index];
 		}
 		
 		public void NextSong()
 		{
-			m_currentIndex++;
-			if(m_currentIndex > m_soundClips.Count -1) {
+			m_currentIndex ++;
+			if (m_currentIndex > m_soundClips.Count - 1) {
 				m_currentIndex = 0;
 			}
 			GetComponent<AudioSource>().clip = m_soundClips[m_currentIndex];
 			GetComponent<AudioSource>().Play();
-			PostMessage("SetText",m_soundClips[m_currentIndex].name);
+			PostSongChange(m_soundClips[m_currentIndex].name, m_soundClips[m_currentIndex].length);
 			GameMaster.Instance.CurrentSong = m_currentIndex;
 		}
 		
 		public void PrevSong()
 		{
-			m_currentIndex--;
-			if(m_currentIndex <= 0) {
-				m_currentIndex = m_soundClips.Count -1;
+			m_currentIndex --;
+			if (m_currentIndex <= 0) {
+				m_currentIndex = m_soundClips.Count - 1;
 			}
 			GetComponent<AudioSource>().clip = m_soundClips[m_currentIndex];
 			GetComponent<AudioSource>().Play();
-			PostMessage("SetText", m_soundClips[m_currentIndex].name);
+			PostSongChange(m_soundClips[m_currentIndex].name, m_soundClips[m_currentIndex].length);
 			GameMaster.Instance.CurrentSong = m_currentIndex;
 		}
 		
 		public void StopSong()
 		{
 			GetComponent<AudioSource>().Stop();
-			// PostMessage("SetText", m_soundClips[m_currentIndex].name + " Stopped");
 		}
 		
 		public void PauseSong()
@@ -137,14 +141,15 @@ namespace BoogieDownGames {
 		public void PlayCurrent ()
 		{
 			GetComponent<AudioSource>().PlayOneShot(m_soundClips[m_currentIndex]);
-			//PostMessage("SetText",m_soundClips[m_currentIndex].name);
 		}
 
-		public void PostMessage(string p_func, string p_message)
+		public void PostSongChange(string songId, float duration)
 		{
-			Hashtable dat = new Hashtable();
-			dat.Add("msg",p_message);
-			NotificationCenter.DefaultCenter.PostNotification(this,p_func,dat);
+			Hashtable messageData = new Hashtable();
+			string messageFunction = "SetSong";
+			messageData.Add("songid", songId);
+			messageData.Add("length", duration);
+			NotificationCenter.DefaultCenter.PostNotification(this, messageFunction, messageData);
 		}
 	}
 }

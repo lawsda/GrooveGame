@@ -127,6 +127,11 @@ namespace BoogieDownGames {
 			SetAnimationTrigger ("CheerJump");
 		}
 
+		public bool TriggerFired ()
+		{
+			return m_triggerFired;
+		}
+
 		private void SetAnimationTrigger (string animationTrigger)
 		{
 			if (m_anime != null) {
